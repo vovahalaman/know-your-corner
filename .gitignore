@@ -1,2 +1,11 @@
-.env
+# Secrets
+.env*
+!.env.example
+
 /Project_guidelines
+
+# Environment and caches
+.venv/
+__pycache__/
+*.py[cod]
+.DS_Store
