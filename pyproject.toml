@@ -15,9 +15,10 @@ dependencies = [
     "streamlit>=1.45.0",
 ]
 
-[project.scripts]
-know-your-corner = "know_your_corner:main"
-
 [build-system]
 requires = ["uv_build>=0.12.13,<0.13.0"]
 build-backend = "uv_build"
+
+# The package folder sits at the project root (flat layout), not under src/.
+[tool.uv.build-backend]
+module-root = ""
