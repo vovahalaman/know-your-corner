@@ -1,27 +1,36 @@
 """AI access: the only module that imports the Gemini SDK."""
 
+from dataclasses import dataclass
+from functools import cache
+
 from google import genai
 
-from know_your_corner import config, prompts
-
-client = genai.Client(api_key=config.GOOGLE_API_KEY)
+from know_your_corner import config
 
 
-def reply(messages: list[dict[str, str]]) -> str:
-    """Send the conversation to Gemini and return the answer text."""
-    # build Gemini history from session state
-    gemini_history = [
-        genai.types.Content(
-            role=m["role"] if m["role"] == "user" else "model",
-            parts=[genai.types.Part(text=m["content"])],
-        )
-        for m in messages
-    ]
-    response = client.models.generate_content(
+@dataclass(frozen=True)
+class ModelReply:
+    interaction_id: str
+    status: str
+    text: str
+
+
+@cache
+def _client() -> genai.Client:
+    if not config.GOOGLE_API_KEY:
+        raise RuntimeError("GOOGLE_API_KEY is not set. Copy .env.example to .env and add your key.")
+    return genai.Client(api_key=config.GOOGLE_API_KEY)
+
+
+def send(message: str, system_instruction: str, previous_interaction_id: str | None) -> ModelReply:
+    interaction = _client().interactions.create(
         model=config.MODEL,
-        contents=gemini_history,
-        config=genai.types.GenerateContentConfig(
-            system_instruction=prompts.SYSTEM_INSTRUCTION,
-        ),
+        input=message,
+        system_instruction=system_instruction,
+        previous_interaction_id=previous_interaction_id,
     )
-    return response.text
+    return ModelReply(
+        interaction_id=interaction.id,
+        status=interaction.status,
+        text=interaction.output_text or "",
+    )
